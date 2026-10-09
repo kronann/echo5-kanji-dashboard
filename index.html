@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Kanji Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app">
+
+  <section class="kanji-panel">
+    <div class="kanji-progress" id="progress">0 / 2398</div>
+    <div class="kanji-char" id="kanjiChar">—</div>
+    <div class="kanji-readings">
+      <div class="reading-block">
+        <span class="reading-label">on</span>
+        <span class="reading-value" id="onYomi">—</span>
+      </div>
+      <div class="reading-block">
+        <span class="reading-label">kun</span>
+        <span class="reading-value" id="kunYomi">—</span>
+      </div>
+    </div>
+    <div class="kanji-meaning" id="meaning">—</div>
+    <div class="kanji-example" id="exampleBlock">
+      <span class="example-word" id="exampleWord">—</span>
+      <span class="example-reading" id="exampleReading">—</span>
+      <span class="example-meaning" id="exampleMeaning">—</span>
+    </div>
+  </section>
+
+  <section class="info-panel">
+    <div class="clock-block primary">
+      <div class="clock-label">東京</div>
+      <div class="clock-date" id="tokyoDate">—</div>
+    </div>
+      <div class="time-weather-row">
+        <span class="clock-time" id="tokyoTime">--:--</span>
+        <span class="weather-icon" id="weatherIcon">—</span>
+        <span class="weather-temp" id="weatherTemp">—</span>
+      </div>
+
+      <div class="weather-desc" id="weatherDesc">—</div>
+    <div class="weather-timeline" id="weatherTimeline"></div>
+
+    <div class="divider"></div>
+    <div class="clock-block secondary">
+      <div class="clock-label">Paris</div>
+      <div class="clock-time small" id="parisTime">--:--</div>
+    </div>
+
+  </section>
+
+</div>
+
+<script src="kanji_data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
