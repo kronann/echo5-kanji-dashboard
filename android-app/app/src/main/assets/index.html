@@ -441,6 +441,11 @@ const WEATHER_ICONS = {
 const TIMELINE_STEP_HOURS = 3;
 const TIMELINE_POINTS = 5; // now, +3h, +6h, +9h, +12h
 
+const WEATHER_RETRY_BASE_MS = 5 * 1000;
+const WEATHER_RETRY_MAX_MS = 2 * 60 * 1000;
+let weatherRetryDelayMs = WEATHER_RETRY_BASE_MS;
+let weatherRetryTimer = null;
+
 function renderWeatherTimeline(hourly, startIndex) {
   const container = document.getElementById('weatherTimeline');
   container.innerHTML = '';
@@ -486,9 +491,16 @@ async function updateWeather() {
     if (startIndex !== -1) {
       renderWeatherTimeline(data.hourly, startIndex);
     }
+    weatherRetryDelayMs = WEATHER_RETRY_BASE_MS; // reset backoff after a success
   } catch (e) {
-    // keep last known values on failure, network hiccups are expected
+    // keep last known values on screen; retry soon instead of waiting for
+    // the next 30-min cycle (the first fetch at boot often loses this race
+    // against WiFi reconnecting, so a single failure shouldn't mean a
+    // 30-minute wait before trying again)
     console.warn('Weather fetch failed:', e);
+    clearTimeout(weatherRetryTimer);
+    weatherRetryTimer = setTimeout(updateWeather, weatherRetryDelayMs);
+    weatherRetryDelayMs = Math.min(weatherRetryDelayMs * 2, WEATHER_RETRY_MAX_MS);
   }
 }
 
