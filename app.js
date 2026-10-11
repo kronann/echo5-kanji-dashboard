@@ -1,21 +1,25 @@
 // ---- Config ----
-const SCHEDULE_TZ = 'Europe/Paris';
-const SCHEDULE_START_HOUR = 8;   // inclusive
-const SCHEDULE_END_HOUR = 18;    // exclusive
+const SCHEDULE_TZ = 'Europe/Paris'; // display clocks only; scheduling uses device-local time
 const TOKYO_LAT = 35.6895;
 const TOKYO_LON = 139.6917;
 const WEATHER_REFRESH_MS = 30 * 60 * 1000; // 30 min
 
 const STORAGE_KEY = 'kanjiDashboardState';
+const SETTINGS_KEY = 'kanjiDashboardSettings';
+const KNOWN_KEY = 'kanjiDashboardKnown';
 
-// ---- Kanji scheduling (mirrors elecrow firmware logic) ----
+const DEFAULT_SETTINGS = { kanjiPerDay: 10, windowStart: 8, windowEnd: 18 };
+
+const KANJI_BY_CHAR = new Map(KANJI_DATA.map((e) => [e.kanji, e]));
+
+// ---- Persistence ----
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) { /* corrupted or unavailable, fall through */ }
-  return { index: 0, lastUnitKey: null };
+  return { index: 0, lastDay: null, advancesToday: 0 };
 }
 
 function saveState(state) {
@@ -24,24 +28,67 @@ function saveState(state) {
   } catch (e) { /* storage unavailable, state just won't persist */ }
 }
 
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch (e) { /* corrupted or unavailable, fall through */ }
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings(settings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) { /* storage unavailable */ }
+}
+
+function loadKnown() {
+  try {
+    const raw = localStorage.getItem(KNOWN_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (e) { /* corrupted or unavailable, fall through */ }
+  return new Set();
+}
+
+function saveKnown(knownSet) {
+  try {
+    localStorage.setItem(KNOWN_KEY, JSON.stringify([...knownSet]));
+  } catch (e) { /* storage unavailable */ }
+}
+
 let state = loadState();
+let settings = loadSettings();
+let known = loadKnown();
 
-function parisHourNow() {
-  const hourStr = new Intl.DateTimeFormat('en-GB', {
-    timeZone: SCHEDULE_TZ,
-    hour: 'numeric',
-    hourCycle: 'h23',
-  }).format(new Date());
-  return parseInt(hourStr, 10);
+// ---- Kanji scheduling ----
+// N kanji/day, spread evenly across a configurable local-time window.
+// Progress within "today" is tracked as a count (advancesToday) compared
+// against how far through the window we are, rather than ticking once an
+// hour, so it generalizes to any kanjiPerDay/window combination.
+
+function localDateString() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function currentUnitKey() {
-  return Math.floor(Date.now() / 1000 / 3600);
+function expectedAdvancesNow() {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const startMin = settings.windowStart * 60;
+  const endMin = settings.windowEnd * 60;
+  if (nowMin <= startMin) return 0;
+  if (nowMin >= endMin) return settings.kanjiPerDay;
+  const fraction = (nowMin - startMin) / (endMin - startMin);
+  return Math.floor(fraction * settings.kanjiPerDay);
 }
 
-function isWithinScheduleWindow() {
-  const h = parisHourNow();
-  return h >= SCHEDULE_START_HOUR && h < SCHEDULE_END_HOUR;
+function nextValidIndex(fromIndex, direction) {
+  let idx = fromIndex;
+  for (let i = 0; i < KANJI_DATA.length; i++) {
+    idx = (idx + direction + KANJI_DATA.length) % KANJI_DATA.length;
+    if (!known.has(KANJI_DATA[idx].kanji)) return idx;
+  }
+  return fromIndex; // everything is blacklisted; nowhere to go
 }
 
 function renderKanji() {
@@ -76,7 +123,16 @@ function manualAdvance(direction) {
   if (now - lastSwipeAt < SWIPE_DEBOUNCE_MS) return;
   lastSwipeAt = now;
 
-  state.index = (state.index + direction + KANJI_DATA.length) % KANJI_DATA.length;
+  state.index = nextValidIndex(state.index, direction);
+  saveState(state);
+  renderKanji();
+}
+
+function markCurrentAsKnown() {
+  const entry = KANJI_DATA[state.index % KANJI_DATA.length];
+  known.add(entry.kanji);
+  saveKnown(known);
+  state.index = nextValidIndex(state.index, 1);
   saveState(state);
   renderKanji();
 }
@@ -98,18 +154,37 @@ function setupSwipeGestures() {
 }
 
 function tickSchedule() {
-  const unitKey = currentUnitKey();
-  if (state.lastUnitKey === unitKey) return; // same hour, nothing to do
+  const today = localDateString();
+  const isFirstRun = state.lastDay === null;
+  const isNewDay = state.lastDay !== today;
 
-  const isFirstRun = state.lastUnitKey === null;
-  state.lastUnitKey = unitKey;
-
-  if (!isFirstRun && isWithinScheduleWindow()) {
-    state.index = (state.index + 1) % KANJI_DATA.length;
+  if (isNewDay) {
+    state.lastDay = today;
+    state.advancesToday = 0;
   }
 
-  saveState(state);
-  renderKanji();
+  const expected = expectedAdvancesNow();
+
+  if (isFirstRun) {
+    // don't replay the whole day's worth of advances on first ever launch;
+    // just establish today's baseline and start accumulating from here
+    state.advancesToday = expected;
+    saveState(state);
+    renderKanji();
+    return;
+  }
+
+  let advanced = false;
+  while (state.advancesToday < expected) {
+    state.index = nextValidIndex(state.index, 1);
+    state.advancesToday++;
+    advanced = true;
+  }
+
+  if (advanced || isNewDay) {
+    saveState(state);
+    renderKanji();
+  }
 }
 
 // ---- Clocks ----
@@ -224,6 +299,72 @@ async function updateWeather() {
   }
 }
 
+// ---- Settings panel ----
+
+function renderKnownList() {
+  document.getElementById('knownCount').textContent = known.size;
+  const container = document.getElementById('knownList');
+  container.innerHTML = '';
+
+  if (known.size === 0) {
+    container.innerHTML = '<div class="known-list-empty">Aucun pour l\'instant</div>';
+    return;
+  }
+
+  // most recently added first
+  for (const kanji of [...known].reverse()) {
+    const entry = KANJI_BY_CHAR.get(kanji);
+    const meaning = entry
+      ? ((entry.meaning_fr && entry.meaning_fr.length) ? entry.meaning_fr : entry.meaning_en).join(', ')
+      : '';
+
+    const item = document.createElement('div');
+    item.className = 'known-item';
+    item.innerHTML = `
+      <span class="k">${kanji}</span>
+      <span class="m">${meaning}</span>
+      <button type="button" aria-label="Retirer">✕</button>
+    `;
+    item.querySelector('button').addEventListener('click', () => {
+      known.delete(kanji);
+      saveKnown(known);
+      renderKnownList();
+    });
+    container.appendChild(item);
+  }
+}
+
+function openSettings() {
+  document.getElementById('kanjiPerDayInput').value = settings.kanjiPerDay;
+  document.getElementById('windowStartInput').value = settings.windowStart;
+  document.getElementById('windowEndInput').value = settings.windowEnd;
+  renderKnownList();
+  document.getElementById('settingsOverlay').hidden = false;
+}
+
+function closeSettings() {
+  const perDay = parseInt(document.getElementById('kanjiPerDayInput').value, 10);
+  const start = parseInt(document.getElementById('windowStartInput').value, 10);
+  const end = parseInt(document.getElementById('windowEndInput').value, 10);
+
+  if (Number.isFinite(perDay) && perDay >= 1 && perDay <= 50) settings.kanjiPerDay = perDay;
+  if (Number.isFinite(start) && start >= 0 && start <= 23) settings.windowStart = start;
+  if (Number.isFinite(end) && end >= 1 && end <= 24) settings.windowEnd = end;
+  if (settings.windowEnd <= settings.windowStart) settings.windowEnd = settings.windowStart + 1;
+
+  saveSettings(settings);
+  document.getElementById('settingsOverlay').hidden = true;
+}
+
+function setupSettingsUI() {
+  document.getElementById('gearBtn').addEventListener('click', openSettings);
+  document.getElementById('settingsCloseBtn').addEventListener('click', closeSettings);
+  document.getElementById('knownBtn').addEventListener('click', markCurrentAsKnown);
+  document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'settingsOverlay') closeSettings();
+  });
+}
+
 // ---- Boot ----
 
 renderKanji();
@@ -231,6 +372,7 @@ tickSchedule();
 updateClocks();
 updateWeather();
 setupSwipeGestures();
+setupSettingsUI();
 
 setInterval(updateClocks, 1000);
 setInterval(tickSchedule, 15 * 1000);

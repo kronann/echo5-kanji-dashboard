@@ -6,14 +6,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
-
-    private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,20 +29,7 @@ public class MainActivity extends Activity {
         }
         applyImmersiveMode();
 
-        webView = new WebView(this);
-        setContentView(webView);
-
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-
-        webView.setWebViewClient(new WebViewClient());
-        webView.setWebChromeClient(new WebChromeClient());
-
-        webView.loadUrl("file:///android_asset/index.html");
+        setContentView(DashboardWebView.create(this));
     }
 
     @Override

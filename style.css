@@ -213,3 +213,275 @@ html, body {
   font-size: 4.2vh;
   font-weight: 500;
 }
+
+/* ---- Icon buttons (gear / mark-known) ---- */
+
+.icon-btn {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.gear-btn,
+.known-btn {
+  position: absolute;
+  top: 1.5vh;
+  width: 4.2vh;
+  height: 4.2vh;
+  font-size: 2vh;
+  z-index: 10;
+}
+
+.gear-btn {
+  left: 1.5vw;
+}
+
+.known-btn {
+  left: calc(1.5vw + 5.2vh);
+  color: #7fd38a;
+}
+
+/* ---- Settings overlay ---- */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-overlay[hidden] {
+  display: none;
+}
+
+.settings-panel {
+  background: var(--panel);
+  border-radius: 1.5vh;
+  width: min(80vw, 520px);
+  max-height: 82vh;
+  padding: 2.5vh 3vw;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
+  overflow: hidden;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 2.4vh;
+  font-weight: 700;
+}
+
+.settings-header .icon-btn {
+  position: static;
+  width: 3.6vh;
+  height: 3.6vh;
+  font-size: 1.8vh;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2vw;
+  font-size: 1.8vh;
+}
+
+.settings-row input[type="number"] {
+  width: 6vh;
+  font-size: 1.8vh;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 0.6vh;
+  color: var(--text);
+  padding: 0.6vh;
+}
+
+.settings-range {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  color: var(--dim);
+}
+
+.settings-section-title {
+  font-size: 1.7vh;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--divider);
+  padding-top: 1.5vh;
+}
+
+.known-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+}
+
+.known-list-empty {
+  color: var(--dim);
+  font-size: 1.6vh;
+  padding: 1vh 0;
+}
+
+.known-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5vw;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.8vh;
+  padding: 0.8vh 1.2vh;
+}
+
+.known-item .k {
+  font-size: 2.4vh;
+  width: 3vh;
+  text-align: center;
+}
+
+.known-item .m {
+  flex: 1;
+  font-size: 1.5vh;
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.known-item button {
+  width: 2.8vh;
+  height: 2.8vh;
+  font-size: 1.4vh;
+  flex-shrink: 0;
+}
+
+/* ================================================================
+   Portrait layout (phone) — kanji card on top, clock/weather below,
+   inspired by the elecrow e-paper project's portrait arrangement.
+   Landscape (Echo Show) rules above are unaffected; everything here
+   overrides them only when orientation is portrait. Sized off vw
+   (not vh) since width is the constrained dimension in portrait.
+   ================================================================ */
+
+@media (orientation: portrait) {
+
+  .app {
+    flex-direction: column;
+  }
+
+  .kanji-panel {
+    flex: 0 0 58%;
+    padding: 3vh 5vw;
+  }
+
+  .kanji-char {
+    font-size: 40vw;
+  }
+
+  .kanji-readings {
+    gap: 6vw;
+    margin-top: 1.5vh;
+  }
+
+  .reading-label {
+    font-size: 3.2vw;
+  }
+
+  .reading-value {
+    font-size: 5.2vw;
+  }
+
+  .kanji-meaning {
+    font-size: 6.5vw;
+    margin-top: 1.5vh;
+  }
+
+  .kanji-example {
+    margin-top: 2vh;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5vw 3vw;
+    font-size: 3.8vw;
+  }
+
+  .example-word {
+    font-size: 6vw;
+  }
+
+  .example-reading,
+  .example-meaning {
+    font-size: 4.6vw;
+  }
+
+  .kanji-progress {
+    font-size: 2.6vw;
+    top: 2vh;
+    right: 5vw;
+  }
+
+  .info-panel {
+    flex: 0 0 42%;
+    padding: 2vh 5vw;
+    gap: 1.5vh;
+  }
+
+  .clock-label {
+    font-size: 4vw;
+  }
+
+  .clock-time {
+    font-size: 15vw;
+  }
+
+  .clock-time.small {
+    font-size: 8vw;
+  }
+
+  .clock-date {
+    font-size: 4vw;
+  }
+
+  .weather-icon {
+    font-size: 8vw;
+  }
+
+  .weather-temp {
+    font-size: 7vw;
+  }
+
+  .weather-desc {
+    font-size: 3.2vw;
+  }
+
+  .weather-timeline {
+    gap: 3vw;
+    margin-top: 1vh;
+  }
+
+  .timeline-hour {
+    font-size: 2.8vw;
+  }
+
+  .timeline-icon {
+    font-size: 6vw;
+  }
+
+  .timeline-temp {
+    font-size: 3vw;
+  }
+}

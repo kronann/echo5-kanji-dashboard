@@ -14,6 +14,8 @@
 <div class="app">
 
   <section class="kanji-panel">
+    <button class="icon-btn gear-btn" id="gearBtn" aria-label="Réglages">⚙</button>
+    <button class="icon-btn known-btn" id="knownBtn" aria-label="Marquer comme déjà connu">✓</button>
     <div class="kanji-progress" id="progress">0 / 2398</div>
     <div class="kanji-char" id="kanjiChar">—</div>
     <div class="kanji-readings">
@@ -55,6 +57,34 @@
     </div>
 
   </section>
+
+  <div class="settings-overlay" id="settingsOverlay" hidden>
+    <div class="settings-panel">
+      <div class="settings-header">
+        <span>Réglages</span>
+        <button class="icon-btn" id="settingsCloseBtn" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="settings-row">
+        <label for="kanjiPerDayInput">Kanji par jour</label>
+        <input type="number" id="kanjiPerDayInput" min="1" max="50" step="1">
+      </div>
+
+      <div class="settings-row">
+        <label for="windowStartInput">Plage active (heure locale)</label>
+        <div class="settings-range">
+          <input type="number" id="windowStartInput" min="0" max="23" step="1">
+          <span>à</span>
+          <input type="number" id="windowEndInput" min="1" max="24" step="1">
+        </div>
+      </div>
+
+      <div class="settings-section-title">
+        Kanji déjà connus (<span id="knownCount">0</span>)
+      </div>
+      <div class="known-list" id="knownList"></div>
+    </div>
+  </div>
 
 </div>
 
